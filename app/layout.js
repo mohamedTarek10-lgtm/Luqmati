@@ -202,7 +202,7 @@ export default async function RootLayout({ children }) {
             }}
           />
         )}
-        <SpeedInsights />
+        <SpeedInsights/>
       </body>
     </html>
   );

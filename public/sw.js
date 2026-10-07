@@ -1,4 +1,4 @@
-const CACHE_NAME = "luqmati-shell-v2";
+const CACHE_NAME = "luqmati-shell-v3";
 const OFFLINE_URL = "/offline.html";
 
 const APP_SHELL = [
