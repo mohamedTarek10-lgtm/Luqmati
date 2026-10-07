@@ -141,34 +141,34 @@ export default async function RootLayout({ children }) {
   const isAdmin = currentAuth.userId ? await isAdminUser(currentAuth) : false;
 
   return (
-    <html
-      lang="ar"
-      dir="rtl"
-      suppressHydrationWarning
-      className={[inter.variable, arabicBrand.variable, metana.variable].join(
-        " ",
-      )}
-      style={{ scrollBehavior: "smooth" }}
-    >
-      <head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
-        />
-        <meta id="theme-color-meta" name="theme-color" content="#000000" />
-        <meta
-          name="theme-color"
-          media="(prefers-color-scheme: light)"
-          content="#f5f7f3"
-        />
-        <script
-          id="json-ld"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
-      <body>
-        <ClerkProvider>
+    <ClerkProvider>
+      <html
+        lang="ar"
+        dir="rtl"
+        suppressHydrationWarning
+        className={[inter.variable, arabicBrand.variable, metana.variable].join(
+          " ",
+        )}
+        style={{ scrollBehavior: "smooth" }}
+      >
+        <head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+          />
+          <meta id="theme-color-meta" name="theme-color" content="#000000" />
+          <meta
+            name="theme-color"
+            media="(prefers-color-scheme: light)"
+            content="#f5f7f3"
+          />
+          <script
+            id="json-ld"
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        </head>
+        <body>
           <ClientProviders>
             <HeaderNav isAdmin={isAdmin} />
             <TrackVisit />
@@ -183,27 +183,27 @@ export default async function RootLayout({ children }) {
             <FooterBranding />
             <MobileNavigation isAdmin={isAdmin} />
           </ClientProviders>
-        </ClerkProvider>
 
-        {process.env.NODE_ENV === "production" ? (
-          <Script
-            id="register-sw"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js').catch(function(err) { console.log('SW registration failed: ', err); }); }); }`,
-            }}
-          />
-        ) : (
-          <Script
-            id="unregister-sw-dev"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister())).catch(()=>{}); }`,
-            }}
-          />
-        )}
-        <SpeedInsights/>
-      </body>
-    </html>
+          {process.env.NODE_ENV === "production" ? (
+            <Script
+              id="register-sw"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js').catch(function(err) { console.log('SW registration failed: ', err); }); }); }`,
+              }}
+            />
+          ) : (
+            <Script
+              id="unregister-sw-dev"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister())).catch(()=>{}); }`,
+              }}
+            />
+          )}
+          <SpeedInsights />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
