@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useAuth, SignInButton } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useLang } from "../../hooks/i18n-context";
+import AuthRequiredCard from "../../components/auth-required-card";
 
 // Group meals by relative date label
 function groupByDate(meals, t, lang) {
@@ -140,24 +141,14 @@ export default function HistoryPage() {
   }, [isLoaded, isSignedIn, userId, t.analysisError]);
 
   // ── Not Signed In ─────────────────────────────────────────────────────────
-    if (isLoaded && !isSignedIn) {
+  if (isLoaded && !isSignedIn) {
     return (
-      <div style={{ minHeight: "80dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
-        <div className="glass-card fade-in" style={{ padding: "40px 28px", maxWidth: "380px", width: "100%" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
-          <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "10px" }}>
-            {t.loginRequired}
-          </h2>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "24px" }}>
-            {t.loginToSeeHistory}
-          </p>
-          <SignInButton mode="modal">
-            <button className="btn-primary" style={{ width: "100%", height: "48px", fontSize: "15px" }}>
-              {t.btnLoginNow}
-            </button>
-          </SignInButton>
-        </div>
-      </div>
+      <AuthRequiredCard
+        icon="🔒"
+        title={t.loginRequired}
+        subtitle={t.loginToSeeHistory}
+        btnText={t.btnLoginNow}
+      />
     );
   }
 

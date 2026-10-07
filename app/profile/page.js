@@ -1,10 +1,11 @@
 "use client";
 
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLang } from "../../hooks/i18n-context";
 import { ProfileAvatarBadge } from "../../components/profile-avatar";
+import AuthRequiredCard from "../../components/auth-required-card";
 
 export default function ProfilePage() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -92,51 +93,12 @@ export default function ProfilePage() {
 
   if (!isSignedIn) {
     return (
-      <div
-        style={{
-          minHeight: "80dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "24px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          className="glass-card fade-in"
-          style={{ padding: "40px 28px", maxWidth: "380px", width: "100%" }}
-        >
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>👤</div>
-          <h2
-            style={{
-              fontSize: "20px",
-              fontWeight: 700,
-              color: "var(--text-primary)",
-              marginBottom: "10px",
-            }}
-          >
-            {t.loginRequired}
-          </h2>
-          <p
-            style={{
-              fontSize: "14px",
-              color: "var(--text-secondary)",
-              marginBottom: "24px",
-            }}
-          >
-            {t.loginToSeeHistory}
-          </p>
-          <SignInButton mode="modal">
-            <button
-              className="btn-primary"
-              style={{ width: "100%", height: "48px", fontSize: "15px" }}
-            >
-              {t.btnLoginNow}
-            </button>
-          </SignInButton>
-        </div>
-      </div>
+      <AuthRequiredCard
+        icon="👤"
+        title={t.loginRequired}
+        subtitle={t.loginToSeeHistory}
+        btnText={t.btnLoginNow}
+      />
     );
   }
 
