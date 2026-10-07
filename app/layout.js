@@ -9,6 +9,7 @@ import MobileNavigation from "../components/mobile-navigation";
 import TrackVisit from "../components/track-visit";
 import { isAdminUser } from "@/lib/auth/isAdmin";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -201,6 +202,7 @@ export default async function RootLayout({ children }) {
             }}
           />
         )}
+        <SpeedInsights />
       </body>
     </html>
   );
