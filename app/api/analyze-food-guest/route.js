@@ -138,7 +138,11 @@ export async function POST(req) {
     console.error("[Luqmati Guest] Analysis failed:", err);
 
     return NextResponse.json(
-      { error: err.message || "حصلت مشكلة أثناء تحليل الطبق. حاول تاني." },
+      {
+        error: err.message || "حصلت مشكلة أثناء تحليل الطبق. حاول تاني.",
+        code: err?.code || "analysis_failed",
+        isFood: err?.code === "not_food" ? false : undefined,
+      },
       { status }
     );
   }

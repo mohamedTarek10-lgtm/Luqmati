@@ -109,18 +109,32 @@ export function HeaderNav({ isAdmin = false }) {
 
 export function FooterBranding() {
   return (
-    <footer className="site-footer">
-      <span>© {new Date().getFullYear()} لقمتي / Luqmati</span>
-      <a
-  href="https://github.com/mohamedTarek10-lgtm"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="footer-mt"
-  title="Created by MT"
-  aria-label="MT Developer Signature"
->
-  MT
-</a>
+    <footer className="site-footer" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "28px 16px 80px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", flexWrap: "wrap", justifyContent: "center" }}>
+        <span>© {new Date().getFullYear()} لقمتي / Luqmati</span>
+        <span>·</span>
+        <Link href="/privacy" style={{ color: "var(--text-secondary)", textDecoration: "none" }}>
+          سياسة الخصوصية
+        </Link>
+        <span>·</span>
+        <Link href="/terms" style={{ color: "var(--text-secondary)", textDecoration: "none" }}>
+          شروط الاستخدام
+        </Link>
+        <span>·</span>
+        <a
+          href="https://github.com/mohamedTarek10-lgtm"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-mt"
+          title="Created by MT"
+          aria-label="MT Developer Signature"
+        >
+          MT
+        </a>
+      </div>
+      <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", maxWidth: "460px", margin: 0, lineHeight: 1.5 }}>
+        ⚠️ جميع الحسابات استرشادية ولا تغني عن الاستشارة الطبية المتخصصة.
+      </p>
     </footer>
   );
 }

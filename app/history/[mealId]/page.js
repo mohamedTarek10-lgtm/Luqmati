@@ -6,6 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { meals } from "@/db/schema";
 import MealDetailActions from "@/components/meal-detail-actions";
+import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 function MacroStat({ label, value, unit, emoji, color = "var(--text-primary)" }) {
   return (
@@ -262,6 +263,9 @@ export default async function MealDetailPage({ params }) {
             </div>
           </div>
         )}
+
+        {/* Health Disclaimer */}
+        <MedicalDisclaimer compact lang="ar" />
       </div>
     </main>
   );

@@ -86,6 +86,7 @@ export async function POST(req) {
           proteinQualityNote: result.proteinQualityNote,
           confidence: result.confidence,
           ingredients: result.ingredients,
+          imageUrl: result.imageUrl || result.thumbnailDataUrl || null,
         })
         .catch((err) => {
           console.warn("[Luqmati] Could not save meal:", err);
@@ -112,7 +113,11 @@ export async function POST(req) {
     console.error("[Luqmati Auth] Food analysis failed:", err);
 
     return NextResponse.json(
-      { error: err.message || "حصلت مشكلة أثناء تحليل الطبق. حاول تاني." },
+      {
+        error: err.message || "حصلت مشكلة أثناء تحليل الطبق. حاول تاني.",
+        code: err?.code || "analysis_failed",
+        isFood: err?.code === "not_food" ? false : undefined,
+      },
       { status }
     );
   }

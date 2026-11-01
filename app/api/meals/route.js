@@ -90,6 +90,7 @@ export async function POST(req) {
       proteinQualityNote: result.proteinQualityNote || "",
       confidence: result.confidence || "high",
       ingredients: result.ingredients || [],
+      imageUrl: result.imageUrl || result.thumbnailDataUrl || body.imageUrl || null,
     });
 
     return NextResponse.json({

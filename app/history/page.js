@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useLang } from "../../hooks/i18n-context";
-import AuthRequiredCard from "../../components/auth-required-card";
 
 // Group meals by relative date label
 function groupByDate(meals, t, lang) {
@@ -141,14 +140,24 @@ export default function HistoryPage() {
   }, [isLoaded, isSignedIn, userId, t.analysisError]);
 
   // ── Not Signed In ─────────────────────────────────────────────────────────
-  if (isLoaded && !isSignedIn) {
+    if (isLoaded && !isSignedIn) {
     return (
-      <AuthRequiredCard
-        icon="🔒"
-        title={t.loginRequired}
-        subtitle={t.loginToSeeHistory}
-        btnText={t.btnLoginNow}
-      />
+      <div style={{ minHeight: "80dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
+        <div className="glass-card fade-in" style={{ padding: "40px 28px", maxWidth: "380px", width: "100%" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "10px" }}>
+            {t.loginRequired}
+          </h2>
+          <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "24px" }}>
+            {t.loginToSeeHistory}
+          </p>
+          <SignInButton mode="modal">
+            <button className="btn-primary" style={{ width: "100%", height: "48px", fontSize: "15px" }}>
+              {t.btnLoginNow}
+            </button>
+          </SignInButton>
+        </div>
+      </div>
     );
   }
 
@@ -306,14 +315,26 @@ export default function HistoryPage() {
                       <div
                         className="meal-thumbnail"
                         style={{
-                          background: "linear-gradient(135deg, var(--brand), var(--brand-strong))",
+                          background: meal.imageUrl ? "transparent" : "linear-gradient(135deg, var(--brand), var(--brand-strong))",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           fontSize: "24px",
+                          overflow: "hidden",
+                          position: "relative",
                         }}
                       >
-                        🍽️
+                        {meal.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={meal.imageUrl}
+                            alt={meal.foodNameArabic || meal.foodName}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            loading="lazy"
+                          />
+                        ) : (
+                          "🍽️"
+                        )}
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
