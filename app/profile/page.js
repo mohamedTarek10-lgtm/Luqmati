@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLang } from "../../hooks/i18n-context";
 import { ProfileAvatarBadge } from "../../components/profile-avatar";
+import { isAdminClientUser } from "../../lib/auth/isAdminClient";
 
 export default function ProfilePage() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -194,6 +195,48 @@ export default function ProfilePage() {
             </p>
           </div>
         </div>
+
+        {/* Admin Dashboard Quick Access */}
+        {isAdminClientUser(user) && (
+          <div
+            className="glass-card fade-in"
+            style={{
+              padding: "16px 20px",
+              marginBottom: "16px",
+              background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1))",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "18px" }}>🛡️</span>
+                <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-primary)" }}>
+                  {lang === "ar" ? "حساب مسؤول (Admin)" : "Administrator Account"}
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--text-secondary)" }}>
+                {lang === "ar" ? "لديك صلاحيات كاملة للوصول إلى لوحة التحكم" : "You have full access to the admin dashboard"}
+              </p>
+            </div>
+            <Link
+              href="/admin"
+              className="btn-primary"
+              style={{
+                padding: "8px 16px",
+                fontSize: "13px",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {lang === "ar" ? "لوحة التحكم ←" : "Admin Dashboard →"}
+            </Link>
+          </div>
+        )}
 
         {/* Daily Nutritional Goals Form */}
         <div

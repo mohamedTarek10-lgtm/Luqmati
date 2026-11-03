@@ -6,11 +6,13 @@ import { SignInButton, SignUpButton, Show, useUser } from "@clerk/nextjs";
 import ThemeToggle from "./theme-toggle";
 import { useLang } from "../hooks/i18n-context";
 import { ProfileAvatarBadge } from "./profile-avatar";
+import { isAdminClientUser } from "../lib/auth/isAdminClient";
 
 export function HeaderNav({ isAdmin = false }) {
   const pathname = usePathname();
   const { user } = useUser();
   const { lang, t, toggleLang } = useLang();
+  const effectiveIsAdmin = isAdmin || isAdminClientUser(user);
 
   const navLinkStyle = (path) => ({
     fontSize: "14px",
@@ -60,7 +62,7 @@ export function HeaderNav({ isAdmin = false }) {
           <Link href="/" style={navLinkStyle("/")}>{t.home}</Link>
           <Link href="/history" style={navLinkStyle("/history")}>{t.history}</Link>
           <Link href="/profile" style={navLinkStyle("/profile")}>{t.profile}</Link>
-          {isAdmin ? <Link href="/admin" style={navLinkStyle("/admin")}>Admin</Link> : null}
+          {effectiveIsAdmin ? <Link href="/admin" style={navLinkStyle("/admin")}>Admin</Link> : null}
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

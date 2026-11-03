@@ -10,7 +10,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const currentAuth = await auth();
-  if (!currentAuth.userId) {
+  if (!currentAuth?.userId) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 

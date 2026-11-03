@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLang } from "../hooks/i18n-context";
+import { useUser } from "@clerk/nextjs";
+import { isAdminClientUser } from "../lib/auth/isAdminClient";
 
 function Icon({ name }) {
   if (name === "profile") {
@@ -28,12 +30,14 @@ function Icon({ name }) {
 export default function MobileNavigation({ isAdmin = false }) {
   const pathname = usePathname();
   const { t } = useLang();
+  const { user } = useUser();
+  const effectiveIsAdmin = isAdmin || isAdminClientUser(user);
 
   const items = [
     { href: "/", label: t.home, icon: "home" },
     { href: "/history", label: t.history, icon: "history" },
     { href: "/profile", label: t.profile, icon: "profile" },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "history" }] : []),
+    ...(effectiveIsAdmin ? [{ href: "/admin", label: "Admin", icon: "history" }] : []),
   ];
 
   return (
