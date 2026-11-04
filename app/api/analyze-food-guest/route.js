@@ -27,6 +27,7 @@ async function getGuestUsage(ipHash) {
     .orderBy(guestUsage.createdAt);
 
   const used = usageRows.length;
+  
 
   if (used < GUEST_INITIAL_ANALYSES) {
     return {

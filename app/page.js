@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useRef, useCallback, useEffect, useSyncExternalStore, memo } from "react";
+import { useOnlineStatus } from "../hooks/use-online-status";
 import dynamic from "next/dynamic";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -27,19 +28,6 @@ const PROVIDER_IMAGE_TYPES = new Set([
   "image/heif",
 ]);
 const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp)$/i;
-
-function subscribeToOnlineStatus(callback) {
-  window.addEventListener("online", callback);
-  window.addEventListener("offline", callback);
-  return () => {
-    window.removeEventListener("online", callback);
-    window.removeEventListener("offline", callback);
-  };
-}
-
-function getOnlineStatus() {
-  return typeof navigator === "undefined" ? true : navigator.onLine;
-}
 
 function subscribeToGuestTrial(callback) {
   window.addEventListener("storage", callback);
@@ -197,7 +185,7 @@ export default function Home() {
   const [isGuestResult, setIsGuestResult] = useState(false);
   const isGuestTrialUsed = useSyncExternalStore(subscribeToGuestTrial, getGuestTrialStatus, () => false);
   const [editableIngredients, setEditableIngredients] = useState([]);
-  const isOffline = !useSyncExternalStore(subscribeToOnlineStatus, getOnlineStatus, () => true);
+  const isOffline = !useOnlineStatus();
 
   // Input mode: image upload vs text / voice description
   const [inputMode, setInputMode] = useState("image"); // "image" | "text"

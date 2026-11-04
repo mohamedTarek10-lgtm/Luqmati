@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+import { useOnlineStatus } from "../../hooks/use-online-status";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useLang } from "../../hooks/i18n-context";
@@ -33,19 +34,6 @@ function confColor(c) {
   return "#ef4444";
 }
 
-function subscribeToOnlineStatus(callback) {
-  window.addEventListener("online", callback);
-  window.addEventListener("offline", callback);
-  return () => {
-    window.removeEventListener("online", callback);
-    window.removeEventListener("offline", callback);
-  };
-}
-
-function getOnlineStatus() {
-  return typeof navigator === "undefined" ? true : navigator.onLine;
-}
-
 export default function HistoryPage() {
   const { isSignedIn, isLoaded, userId } = useAuth();
   const { t, lang } = useLang();
@@ -55,7 +43,7 @@ export default function HistoryPage() {
   const [clearingAll, setClearingAll] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const isOffline = !useSyncExternalStore(subscribeToOnlineStatus, getOnlineStatus, () => true);
+  const isOffline = !useOnlineStatus();
 
   async function handleClearAll() {
     try {
