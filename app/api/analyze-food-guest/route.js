@@ -5,6 +5,7 @@ import { guestUsage } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { processAndAnalyzeFoodImage } from "@/lib/food-analysis/engine";
 import { FoodAnalysisError } from "@/lib/food-analysis/openrouter";
+import { getClientIp } from "@/lib/utils/ip";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -13,24 +14,6 @@ const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const GUEST_INITIAL_ANALYSES = 1;
 const GUEST_REFILL_INTERVAL_MS = 60 * 60 * 1000;
 
-function getClientIp(req) {
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp) return realIp.trim();
-
-  const cfIp = req.headers.get("cf-connecting-ip");
-  if (cfIp) return cfIp.trim();
-
-  const vercelIp = req.headers.get("x-vercel-forwarded-for");
-  if (vercelIp) return vercelIp.split(",")[0].trim();
-
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const parts = forwardedFor.split(",").map((p) => p.trim()).filter(Boolean);
-    return parts[parts.length - 1] || "unknown-ip";
-  }
-
-  return "unknown-ip";
-}
 
 async function getGuestUsage(ipHash) {
   if (!isDatabaseConfigured || !db) {
