@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { visits } from "@/db/schema";
-import { isAdminUser } from "@/lib/auth/isAdmin";
+
+// Clerk resolves the session from request headers, so this route can never be
+// prerendered; declaring it keeps the build output honest.
+export const dynamic = "force-dynamic";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -69,15 +71,6 @@ async function getSignupMetrics() {
 }
 
 export default async function AdminPage() {
-  const currentAuth = await auth();
-  if (!currentAuth.userId) {
-    redirect("/");
-  }
-
-  const isAllowed = await isAdminUser(currentAuth);
-  if (!isAllowed) {
-    redirect("/");
-  }
 
   const [visitorMetrics, signupMetrics] = await Promise.all([
     getVisitorMetrics(),

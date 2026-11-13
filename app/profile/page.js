@@ -29,7 +29,7 @@ export default function ProfilePage() {
       .then((r) => r.json())
       .then((d) => {
         if (isMounted) {
-          setMealCount(d.meals?.length ?? 0);
+          setMealCount(typeof d.total === "number" ? d.total : (d.meals?.length ?? 0));
         }
       })
       .catch((err) => {
@@ -148,7 +148,6 @@ export default function ProfilePage() {
           className="font-arabic"
           style={{
             fontSize: "28px",
-            fontWeight: 700,
             color: "var(--text-primary)",
             marginBottom: "24px",
           }}

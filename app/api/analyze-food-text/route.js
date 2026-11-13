@@ -5,6 +5,7 @@ import { meals, guestUsage } from "@/db/schema";
 import { eq, and, gte, count } from "drizzle-orm";
 import { processAndAnalyzeFoodText } from "@/lib/food-analysis/engine";
 import { FoodAnalysisError } from "@/lib/food-analysis/openrouter";
+import { consumeQuota, releaseQuota } from "@/lib/quotas";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -59,7 +60,20 @@ export async function POST(req) {
 
     // ── Signed In Flow ───────────────────────────────────────────────────────
     if (userId) {
-      const dailyUsed = await getDailyUsage(userId);
+      const quota = await consumeQuota("user:" + userId, FREE_DAILY_LIMIT);
+      if (quota && !quota.allowed) {
+        return NextResponse.json(
+          {
+            error: "وصلت للحد اليومي (" + FREE_DAILY_LIMIT + " تحليلات). هيتجدد الرصيد غداً.",
+            code: "daily_limit_reached",
+            rateLimited: true,
+            limit: FREE_DAILY_LIMIT,
+            remaining: 0,
+          },
+          { status: 429 }
+        );
+      }
+      const dailyUsed = quota ? quota.used - 1 : await getDailyUsage(userId);
       if (dailyUsed >= FREE_DAILY_LIMIT) {
         return NextResponse.json(
           {
@@ -74,7 +88,13 @@ export async function POST(req) {
       }
 
       // Analyze text description
-      const result = await processAndAnalyzeFoodText(text);
+      let result;
+      try {
+        result = await processAndAnalyzeFoodText(text);
+      } catch (error) {
+        await releaseQuota("user:" + userId);
+        throw error;
+      }
 
       let savedMealId = null;
       if (isDatabaseConfigured && db) {

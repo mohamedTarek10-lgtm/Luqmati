@@ -3,17 +3,17 @@ import { createHash } from "crypto";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { guestUsage } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { processAndAnalyzeFoodImage } from "@/lib/food-analysis/engine";
+import { analyzePreparedFoodImage, buildFoodImage } from "@/lib/food-analysis/engine";
 import { FoodAnalysisError } from "@/lib/food-analysis/openrouter";
 import { getClientIp } from "@/lib/utils/ip";
+import { getCachedAnalysis, setCachedAnalysis } from "@/lib/analysis-cache";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 26;
 
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const GUEST_INITIAL_ANALYSES = 1;
 const GUEST_REFILL_INTERVAL_MS = 60 * 60 * 1000;
-
 
 async function getGuestUsage(ipHash) {
   if (!isDatabaseConfigured || !db) {
@@ -27,7 +27,6 @@ async function getGuestUsage(ipHash) {
     .orderBy(guestUsage.createdAt);
 
   const used = usageRows.length;
-  
 
   if (used < GUEST_INITIAL_ANALYSES) {
     return {
@@ -88,11 +87,21 @@ export async function POST(req) {
 
     const bytes = await image.arrayBuffer();
     if (bytes.byteLength > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "حجم الصورة كبير جداً (أقصى حد 15MB)." }, { status: 413 });
+      return NextResponse.json(
+        { error: "حجم الصورة كبير جداً (أقصى حد 6MB)." },
+        { status: 413 }
+      );
     }
 
-    // Call unified analysis engine
-    const result = await processAndAnalyzeFoodImage(bytes);
+    const prepared = await buildFoodImage(bytes);
+
+    const cached = await getCachedAnalysis(prepared.imageHash);
+    const result =
+      cached || (await analyzePreparedFoodImage(prepared.visionDataUrl));
+
+    if (!cached) {
+      await setCachedAnalysis(prepared.imageHash, result);
+    }
 
     // Record guest usage ONLY after successful AI output
     if (isDatabaseConfigured && db) {
@@ -109,7 +118,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      result,
+      result: { ...result, imageUrl: prepared.thumbnailDataUrl },
       guestTrial: true,
       remaining: Math.max(0, guestUsageInfo.available - 1),
     });

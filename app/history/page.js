@@ -43,6 +43,10 @@ export default function HistoryPage() {
   const [clearingAll, setClearingAll] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(null);
   const isOffline = !useOnlineStatus();
 
   async function handleClearAll() {
@@ -106,11 +110,14 @@ export default function HistoryPage() {
 
     async function fetchMeals() {
       try {
-        const res = await fetch("/api/meals");
+        const res = await fetch("/api/meals?limit=30");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || t.analysisError);
         const fetched = data.meals || [];
         setMeals(fetched);
+        setHasMore(Boolean(data.hasMore));
+        setNextCursor(data.nextCursor ?? null);
+        if (typeof data.total === "number") setTotal(data.total);
         // Cache for offline history access
         if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(fetched));
       } catch (err) {
@@ -126,6 +133,24 @@ export default function HistoryPage() {
       setLoading(false);
     }
   }, [isLoaded, isSignedIn, userId, t.analysisError]);
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const res = await fetch("/api/meals?limit=30&cursor=" + encodeURIComponent(nextCursor));
+      const data = await res.json();
+      if (res.ok) {
+        setMeals((prev) => [...prev, ...(data.meals || [])]);
+        setHasMore(Boolean(data.hasMore));
+        setNextCursor(data.nextCursor ?? null);
+      }
+    } catch {
+      // Keep the already-rendered page when "load more" fails.
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   // ── Not Signed In ─────────────────────────────────────────────────────────
     if (isLoaded && !isSignedIn) {
@@ -226,7 +251,7 @@ export default function HistoryPage() {
               {t.historyTitle}
             </h1>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-              {meals.length} {t.mealsCount}
+              {total ?? meals.length} {t.mealsCount}
             </p>
           </div>
 
@@ -303,7 +328,7 @@ export default function HistoryPage() {
                       <div
                         className="meal-thumbnail"
                         style={{
-                          background: meal.imageUrl ? "transparent" : "linear-gradient(135deg, var(--brand), var(--brand-strong))",
+                          background: meal.hasImage ? "transparent" : "linear-gradient(135deg, var(--brand), var(--brand-strong))",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -312,10 +337,10 @@ export default function HistoryPage() {
                           position: "relative",
                         }}
                       >
-                        {meal.imageUrl ? (
+                        {meal.hasImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={meal.imageUrl}
+                            src={"/api/meals/" + meal.id + "/thumbnail"}
                             alt={meal.foodNameArabic || meal.foodName}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             loading="lazy"
@@ -375,6 +400,19 @@ export default function HistoryPage() {
             </div>
           </div>
         ))}
+        {hasMore && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={loadMore}
+              disabled={loadingMore}
+              style={{ padding: "10px 22px", fontSize: "14px" }}
+            >
+              {loadingMore ? "..." : lang === "ar" ? "عرض المزيد" : "Load more"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

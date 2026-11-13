@@ -1,5 +1,4 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -7,9 +6,7 @@ import ClientProviders from "../components/client-providers";
 import { HeaderNav, FooterBranding } from "../components/header-nav";
 import MobileNavigation from "../components/mobile-navigation";
 import TrackVisit from "../components/track-visit";
-import { isAdminUser } from "@/lib/auth/isAdmin";
 import Script from "next/script";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,7 +15,15 @@ const inter = Inter({
 });
 
 const arabicBrand = localFont({
-  src: "../public/fonts/arabicFont/alfont_com_InkBrushArabic_DEMO-Textured.otf",
+  src: [
+    {
+      path: "./fonts/arabicFont/InkBrushArabic_DEMO-Textured.woff2",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  fallback: ["Segoe UI", "Tahoma", "Arial", "system-ui", "sans-serif"],
+  adjustFontFallback: false,
   variable: "--font-arabic",
   display: "swap",
   preload: false,
@@ -27,12 +32,12 @@ const arabicBrand = localFont({
 const metana = localFont({
   src: [
     {
-      path: "../public/fonts/englishFontbtn/NeueMetanaMono-Light.otf",
+      path: "./fonts/englishFontbtn/NeueMetanaMono-Light.otf",
       weight: "300 500",
       style: "normal",
     },
     {
-      path: "../public/fonts/englishFontbtn/NeueMetanaMono-SemiBold.otf",
+      path: "./fonts/englishFontbtn/NeueMetanaMono-SemiBold.otf",
       weight: "600 800",
       style: "normal",
     },
@@ -119,7 +124,7 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }) {
+export default function RootLayout({ children }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -137,8 +142,6 @@ export default async function RootLayout({ children }) {
     },
   };
 
-  const currentAuth = await auth();
-  const isAdmin = currentAuth.userId ? await isAdminUser(currentAuth) : false;
 
   return (
     <ClerkProvider>
@@ -170,7 +173,7 @@ export default async function RootLayout({ children }) {
         </head>
         <body>
           <ClientProviders>
-            <HeaderNav isAdmin={isAdmin} />
+            <HeaderNav />
             <TrackVisit />
 
             <div
@@ -181,7 +184,7 @@ export default async function RootLayout({ children }) {
             </div>
 
             <FooterBranding />
-            <MobileNavigation isAdmin={isAdmin} />
+            <MobileNavigation />
           </ClientProviders>
 
           {process.env.NODE_ENV === "production" ? (
@@ -201,7 +204,6 @@ export default async function RootLayout({ children }) {
               }}
             />
           )}
-          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

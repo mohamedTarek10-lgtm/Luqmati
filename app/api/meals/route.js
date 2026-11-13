@@ -2,12 +2,33 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { meals } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc, lt, count, sql } from "drizzle-orm";
+import { deleteMealThumbnail, storeMealImage } from "@/lib/storage/meal-images";
 
-// GET /api/meals — returns authenticated user's meals
-export async function GET() {
+export const runtime = "nodejs";
+
+const DEFAULT_PAGE_SIZE = 20;
+
+// Slim list shape: no ingredients, micronutrients or image bytes.
+const listColumns = {
+  id: meals.id,
+  foodName: meals.foodName,
+  foodNameArabic: meals.foodNameArabic,
+  calories: meals.calories,
+  protein: meals.protein,
+  carbs: meals.carbs,
+  fats: meals.fats,
+  confidence: meals.confidence,
+  portionSize: meals.portionSize,
+  estimatedGrams: meals.estimatedGrams,
+  createdAt: meals.createdAt,
+  hasImage: sql`(${meals.imageKey} is not null or ${meals.imageUrl} like 'data:image/%')`,
+};
+
+// GET /api/meals?cursor=ISO&limit=20 — one page of the user's meals
+export async function GET(request) {
   try {
-    if (!isDatabaseConfigured) {
+    if (!isDatabaseConfigured || !db) {
       return NextResponse.json(
         { error: "قاعدة البيانات غير مُعدة بعد. أضف رابط Neon الصحيح في DATABASE_URL." },
         { status: 503 }
@@ -23,13 +44,48 @@ export async function GET() {
       );
     }
 
-    const userMeals = await db
-      .select()
-      .from(meals)
-      .where(eq(meals.userId, userId))
-      .orderBy(desc(meals.createdAt));
+    const url = new URL(request.url);
+    const requested = Number(url.searchParams.get("limit"));
+    const limit = Number.isFinite(requested)
+      ? Math.min(Math.max(Math.trunc(requested), 1), 50)
+      : DEFAULT_PAGE_SIZE;
 
-    return NextResponse.json({ meals: userMeals });
+    const cursorRaw = url.searchParams.get("cursor");
+    const conditions = [eq(meals.userId, userId)];
+
+    if (cursorRaw) {
+      const cursorDate = new Date(cursorRaw);
+      if (!Number.isNaN(cursorDate.getTime())) {
+        conditions.push(lt(meals.createdAt, cursorDate));
+      }
+    }
+
+    const rows = await db
+      .select(listColumns)
+      .from(meals)
+      .where(and(...conditions))
+      .orderBy(desc(meals.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+
+    // Total is only needed for the header count on the first page.
+    let total = null;
+    if (!cursorRaw) {
+      const [row] = await db
+        .select({ value: count() })
+        .from(meals)
+        .where(eq(meals.userId, userId));
+      total = Number(row?.value ?? 0);
+    }
+
+    return NextResponse.json({
+      meals: page,
+      hasMore,
+      total,
+      nextCursor: hasMore && page.length ? page[page.length - 1].createdAt : null,
+    });
   } catch (error) {
     console.error("GET /api/meals error:", error);
     return NextResponse.json(
@@ -68,6 +124,9 @@ export async function POST(req) {
     }
 
     const newMealId = crypto.randomUUID();
+    const image = await storeMealImage(newMealId, {
+      thumbnailDataUrl: result.thumbnailDataUrl || result.imageUrl || body.imageUrl || null,
+    });
 
     await db.insert(meals).values({
       id: newMealId,
@@ -90,7 +149,8 @@ export async function POST(req) {
       proteinQualityNote: result.proteinQualityNote || "",
       confidence: result.confidence || "high",
       ingredients: result.ingredients || [],
-      imageUrl: result.imageUrl || result.thumbnailDataUrl || body.imageUrl || null,
+      imageKey: image.imageKey,
+      imageUrl: image.imageUrl,
     });
 
     return NextResponse.json({
@@ -125,7 +185,17 @@ export async function DELETE() {
       );
     }
 
+    const stored = await db
+      .select({ imageKey: meals.imageKey })
+      .from(meals)
+      .where(eq(meals.userId, userId));
+
     await db.delete(meals).where(eq(meals.userId, userId));
+
+    // Images live outside Postgres; clean them up without blocking the response.
+    await Promise.allSettled(
+      stored.filter((row) => row.imageKey).map((row) => deleteMealThumbnail(row.imageKey))
+    );
 
     return NextResponse.json({
       success: true,

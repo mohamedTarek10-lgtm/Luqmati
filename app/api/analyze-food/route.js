@@ -3,14 +3,36 @@ import { auth } from "@clerk/nextjs/server";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { meals } from "@/db/schema";
 import { eq, and, gte, count } from "drizzle-orm";
-import { processAndAnalyzeFoodImage } from "@/lib/food-analysis/engine";
+import { analyzePreparedFoodImage, buildFoodImage } from "@/lib/food-analysis/engine";
 import { FoodAnalysisError } from "@/lib/food-analysis/openrouter";
+import { getCachedAnalysis, setCachedAnalysis } from "@/lib/analysis-cache";
+import { consumeQuota, releaseQuota } from "@/lib/quotas";
+import { storeMealImage } from "@/lib/storage/meal-images";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// Netlify does not honour 120s here; keep the declared budget honest.
+export const maxDuration = 26;
 
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+// Netlify buffers requests up to 6MB, and the client already downscales to
+// 1400px JPEG, so anything larger is rejected before it reaches sharp.
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const FREE_DAILY_LIMIT = 10;
+
+const QUOTA_MESSAGE =
+  "وصلت للحد اليومي (" + FREE_DAILY_LIMIT + " تحليلات). هيتجدد الرصيد غداً.";
+
+function rateLimited() {
+  return NextResponse.json(
+    {
+      error: QUOTA_MESSAGE,
+      code: "daily_limit_reached",
+      rateLimited: true,
+      limit: FREE_DAILY_LIMIT,
+      remaining: 0,
+    },
+    { status: 429 }
+  );
+}
 
 async function getDailyUsage(userId) {
   if (!isDatabaseConfigured || !db) return 0;
@@ -24,45 +46,60 @@ async function getDailyUsage(userId) {
 }
 
 export async function POST(req) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "لازم تسجل دخول الأول." }, { status: 401 });
+  }
+
+  // Reserve the unit atomically so concurrent requests cannot overspend.
+  const scope = "user:" + userId;
+  const quota = await consumeQuota(scope, FREE_DAILY_LIMIT);
+
+  let dailyUsed = 0;
+  if (quota) {
+    if (!quota.allowed) return rateLimited();
+    dailyUsed = quota.used - 1;
+  } else {
+    dailyUsed = await getDailyUsage(userId);
+    if (dailyUsed >= FREE_DAILY_LIMIT) return rateLimited();
+  }
+
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "لازم تسجل دخول الأول." }, { status: 401 });
-    }
-
-    const dailyUsed = await getDailyUsage(userId);
-    if (dailyUsed >= FREE_DAILY_LIMIT) {
-      return NextResponse.json(
-        {
-          error: `وصلت للحد اليومي (${FREE_DAILY_LIMIT} تحليلات). هيتجدد الرصيد غداً.`,
-          code: "daily_limit_reached",
-          rateLimited: true,
-          limit: FREE_DAILY_LIMIT,
-          remaining: 0,
-        },
-        { status: 429 }
-      );
-    }
-
     const formData = await req.formData();
     const image = formData.get("image");
 
     if (!image || typeof image === "string") {
+      await releaseQuota(scope);
       return NextResponse.json({ error: "اختار صورة أكل الأول." }, { status: 400 });
     }
 
     const bytes = await image.arrayBuffer();
     if (bytes.byteLength > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "حجم الصورة كبير جداً (أقصى حد 15MB)." }, { status: 413 });
+      await releaseQuota(scope);
+      return NextResponse.json(
+        { error: "حجم الصورة كبير جداً (أقصى حد 6MB)." },
+        { status: 413 }
+      );
     }
 
-    // Call unified analysis engine
-    const result = await processAndAnalyzeFoodImage(bytes);
+    // Decode once: the AI image and the stored thumbnail come from one buffer.
+    const prepared = await buildFoodImage(bytes);
 
-    // Save to database
-    let savedMealId = null;
+    const cached = await getCachedAnalysis(prepared.imageHash);
+    const result =
+      cached || (await analyzePreparedFoodImage(prepared.visionDataUrl));
+
+    if (!cached) {
+      await setCachedAnalysis(prepared.imageHash, result);
+    }
+
+    const savedMealId = crypto.randomUUID();
+    const storedImage = await storeMealImage(savedMealId, {
+      thumbnailBuffer: prepared.thumbnailBuffer,
+      thumbnailDataUrl: prepared.thumbnailDataUrl,
+    });
+
     if (isDatabaseConfigured && db) {
-      savedMealId = crypto.randomUUID();
       await db
         .insert(meals)
         .values({
@@ -86,7 +123,8 @@ export async function POST(req) {
           proteinQualityNote: result.proteinQualityNote,
           confidence: result.confidence,
           ingredients: result.ingredients,
-          imageUrl: result.imageUrl || result.thumbnailDataUrl || null,
+          imageKey: storedImage.imageKey,
+          imageUrl: storedImage.imageUrl,
         })
         .catch((err) => {
           console.warn("[Luqmati] Could not save meal:", err);
@@ -95,18 +133,24 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      result,
+      result: { ...result, imageUrl: prepared.thumbnailDataUrl },
       mealId: savedMealId,
-      saved: Boolean(savedMealId),
+      saved: true,
       usage: {
-        remaining: Math.max(0, FREE_DAILY_LIMIT - dailyUsed - 1),
+        remaining: quota ? quota.remaining : Math.max(0, FREE_DAILY_LIMIT - dailyUsed - 1),
         limit: FREE_DAILY_LIMIT,
         unlimited: false,
       },
     });
   } catch (err) {
+    // A failed or rejected analysis must not consume the user's quota.
+    await releaseQuota(scope);
+
     if (err?.name === "AbortError") {
-      return NextResponse.json({ error: "التحليل أخد وقت أطول من اللازم. حاول تاني." }, { status: 504 });
+      return NextResponse.json(
+        { error: "التحليل أخد وقت أطول من اللازم. حاول تاني." },
+        { status: 504 }
+      );
     }
 
     const status = err instanceof FoodAnalysisError ? err.status : 500;

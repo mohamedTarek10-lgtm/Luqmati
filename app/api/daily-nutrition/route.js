@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { db, isDatabaseConfigured } from "@/config/db";
 import { meals, userTargets } from "@/db/schema";
 
@@ -35,9 +35,17 @@ export async function GET() {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [todayMeals, [customTargets]] = await Promise.all([
+    // Aggregate in SQL: the old version selected every meal row and summed in JS.
+    const [[totals], [customTargets]] = await Promise.all([
       db
-        .select()
+        .select({
+          calories: sql`coalesce(sum(${meals.calories}), 0)`,
+          protein: sql`coalesce(sum(${meals.protein}), 0)`,
+          carbs: sql`coalesce(sum(${meals.carbs}), 0)`,
+          fats: sql`coalesce(sum(${meals.fats}), 0)`,
+          fiber: sql`coalesce(sum(${meals.fiber}), 0)`,
+          mealsCount: sql`count(*)`,
+        })
         .from(meals)
         .where(and(eq(meals.userId, userId), gte(meals.createdAt, startOfToday))),
       db
@@ -56,27 +64,13 @@ export async function GET() {
     };
 
     const consumed = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      fiber: 0,
-      mealsCount: todayMeals.length,
+      calories: Math.round(Number(totals?.calories) || 0),
+      protein: Number((Number(totals?.protein) || 0).toFixed(1)),
+      carbs: Number((Number(totals?.carbs) || 0).toFixed(1)),
+      fats: Number((Number(totals?.fats) || 0).toFixed(1)),
+      fiber: Number((Number(totals?.fiber) || 0).toFixed(1)),
+      mealsCount: Number(totals?.mealsCount) || 0,
     };
-
-    for (const meal of todayMeals) {
-      consumed.calories += Number(meal.calories) || 0;
-      consumed.protein += Number(meal.protein) || 0;
-      consumed.carbs += Number(meal.carbs) || 0;
-      consumed.fats += Number(meal.fats) || 0;
-      consumed.fiber += Number(meal.fiber) || 0;
-    }
-
-    consumed.calories = Math.round(consumed.calories);
-    consumed.protein = Number(consumed.protein.toFixed(1));
-    consumed.carbs = Number(consumed.carbs.toFixed(1));
-    consumed.fats = Number(consumed.fats.toFixed(1));
-    consumed.fiber = Number(consumed.fiber.toFixed(1));
 
     const remaining = {
       calories: Math.max(0, targets.calorieTarget - consumed.calories),
@@ -99,7 +93,6 @@ export async function GET() {
       targets,
       remaining,
       percentages,
-      todayMeals,
     });
   } catch (err) {
     console.error("[Luqmati] Daily nutrition GET error:", err);

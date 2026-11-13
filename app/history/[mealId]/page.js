@@ -104,10 +104,10 @@ export default async function MealDetailPage({ params }) {
         </div>
 
         {/* Optional Meal Photo */}
-        {meal.imageUrl && (
+        {(meal.imageKey || meal.imageUrl) && (
           <div className="glass-card" style={{ padding: "12px", marginBottom: "20px", borderRadius: "18px" }}>
             <Image
-              src={meal.imageUrl}
+              src={"/api/meals/" + meal.id + "/thumbnail"}
               alt={meal.foodNameArabic || meal.foodName}
               width={680}
               height={300}
