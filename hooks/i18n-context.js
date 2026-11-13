@@ -116,6 +116,7 @@ const strings = {
   en: {
     // Brand
     brandEn: "Luqmati",
+    brandAr: "لقمتي",
     scanBrandTag: "AI meal scanner",
     scanSteps: ["Snap the plate", "Analyze", "See macros"],
 
