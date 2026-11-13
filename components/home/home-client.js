@@ -802,8 +802,17 @@ export default function Home() {
               marginBottom: "10px",
             }}
           >
-            
-            
+            <div className="scan-brand">
+              <span className="scan-brand-mark" aria-hidden="true">
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </span>
+              <span className={`scan-brand-name ${lang === "ar" ? "font-arabic" : "english-font"}`}>
+                {lang === "ar" ? t.brandAr : t.brandEn}
+              </span>
+              <span className="scan-brand-tag">{t.scanBrandTag}</span>
+            </div>
 
             {usage && !usage.unlimited && (
               <div className="usage-counter">
@@ -832,6 +841,12 @@ export default function Home() {
             style={{ color: "var(--text-secondary)" }}
           >
             {t.heroSubtitle}
+          </p>
+
+          <p className="scan-steps">
+            {t.scanSteps.map((step) => (
+              <span key={step}>{step}</span>
+            ))}
           </p>
 
           {/* Mode Switcher: Image vs Text/Voice */}
@@ -985,12 +1000,12 @@ export default function Home() {
                       type="button"
                       onClick={() => setMealText(chip)}
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "12px",
+                        padding: "4px 9px",
+                        borderRadius: "10px",
                         border: "1px solid var(--glass-border)",
                         background: "var(--surface)",
                         color: "var(--text-secondary)",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         cursor: "pointer",
                         transition: "all 0.15s ease",
                       }}

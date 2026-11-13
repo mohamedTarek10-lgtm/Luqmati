@@ -7,6 +7,8 @@ const strings = {
   ar: {
     // Brand
     brandAr: "لقمتي",
+    scanBrandTag: "محلل الوجبات الذكي",
+    scanSteps: ["صوّر الطبق", "اضغط حلّل", "شوف الماكروز"],
     brandEn: "Luqmati",
 
     // Nav
@@ -113,8 +115,9 @@ const strings = {
 
   en: {
     // Brand
-    brandAr: "لقمتي",
     brandEn: "Luqmati",
+    scanBrandTag: "AI meal scanner",
+    scanSteps: ["Snap the plate", "Analyze", "See macros"],
 
     // Nav
     home: "Home",
