@@ -46,7 +46,7 @@ function useGuideHidden() {
 
 export default function HomeGuidance() {
   const { lang } = useLang();
-  const content = HOME_CONTENT[lang] || HOME_CONTENT.ar;
+  const content = HOME_CONTENT[lang];
   const guide = content.guide;
   const [open, setOpen] = useState(false);
   const labelRef = useRef(null);
@@ -104,8 +104,6 @@ export default function HomeGuidance() {
       document.body.classList.remove("guide-open");
     };
   }, [open]);
-
-  const openGuide = () => setOpen(true);
 
   // Once the guidance has been opened and closed, the bubble retires for good.
   // Hiding on close (not on open) means a tap that misses cannot lose the
@@ -212,7 +210,7 @@ export default function HomeGuidance() {
             <button
               type="button"
               className="guide-orb"
-              onClick={openGuide}
+              onClick={() => setOpen(true)}
               aria-label={guide.title}
             >
               <span aria-hidden="true">luqmati</span>
@@ -232,7 +230,7 @@ export default function HomeGuidance() {
           <button
             type="button"
             className="guide-teaser"
-            onClick={openGuide}
+            onClick={() => setOpen(true)}
             aria-label={guide.title}
           >
             <span ref={labelRef} aria-hidden="true">
