@@ -7,6 +7,7 @@ import { HeaderNav, FooterBranding } from "../components/header-nav";
 import MobileNavigation from "../components/mobile-navigation";
 import TrackVisit from "../components/track-visit";
 import Script from "next/script";
+import { SITE_URL } from "../lib/site-url";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -69,27 +70,28 @@ export const metadata = {
   authors: [{ name: "MT" }],
   creator: "MT",
   publisher: "Luqmati",
-  metadataBase: new URL("https://luqmati.app"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
     languages: {
       "ar-EG": "/",
       "en-US": "/?lang=en",
+      "x-default": "/",
     },
   },
   openGraph: {
     title: "لقمتي / Luqmati — اعرف أكلك فيه إيه بالذكاء الاصطناعي",
     description:
       "تطبيق لقمتي لتحليل الأكل والسعرات والبروتين بدقة فائقة للأكلات المصرية والعالمية",
-    url: "https://luqmati.app",
+    url: SITE_URL,
     siteName: "Luqmati لقمتي",
     locale: "ar_EG",
     type: "website",
     images: [
       {
-        url: "/icon-512.png",
-        width: 512,
-        height: 512,
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
         alt: "لقمتي Luqmati AI Food Analyzer",
       },
     ],
@@ -99,6 +101,7 @@ export const metadata = {
     title: "لقمتي / Luqmati — AI Food & Macro Analyzer",
     description: "صوّر طبقك واعرف السعرات والبروتين والماكروز تلقائياً",
     creator: "@LuqmatiApp",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -108,6 +111,11 @@ export const metadata = {
       follow: true,
       "max-image-preview": "large",
     },
+  },
+  verification: {
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
+      "tQuHl7PaMtPtA0W1vUPDpH3JeK3RY71DOMQi99ZF9gE",
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -130,7 +138,7 @@ export default function RootLayout({ children }) {
     "@type": "WebApplication",
     name: "لقمتي / Luqmati",
     alternateName: "Luqmati",
-    url: "https://luqmati.app",
+    url: SITE_URL,
     applicationCategory: "HealthApplication",
     operatingSystem: "All",
     description:

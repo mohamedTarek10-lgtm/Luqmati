@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "الملف الشخصي | لقمتي Luqmati",
+  title: "الملف الشخصي",
   description: "بيانات ملفك الشخصي وإحصائيات استخدامك في تطبيق لقمتي",
   robots: {
     index: false, // Private user profile page

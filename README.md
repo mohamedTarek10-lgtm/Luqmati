@@ -50,3 +50,24 @@ The app runs at `http://localhost:3002` by default.
 
 - The app includes a global CSP, a secure admin redirect, and a non-invasive visit counter that hashes client IP + UA before storing a unique visitor hash.
 - The AI route compresses images client-side before sending to OpenRouter and applies a hard timeout plus retry logic for transient failures.
+
+## SEO and deployment URL
+
+The canonical URL, `og:url`, `robots.txt` and `sitemap.xml` all come from one place: `lib/site-url.js`, which reads `NEXT_PUBLIC_SITE_URL` (default `https://luqmati.vercel.app`). Set it on the host so search engines see the host the app is actually served from — a canonical pointing at a domain that does not resolve removes the site from search results entirely.
+
+To verify the site in Google Search Console, put its token in `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` and redeploy; it is emitted as the `google-site-verification` meta tag. Then submit `/sitemap.xml`.
+
+## Meal image storage (Vercel Blob)
+
+Thumbnails go to a **private** Vercel Blob store when `BLOB_READ_WRITE_TOKEN` is set (Hobby includes 1 GB). `BLOB_STORE_ID` is optional and only needed when the token can reach more than one store.
+
+Meals store the blob **pathname** (`meal-thumbnails/<mealId>.webp`), never a public URL. Reads go through `GET /api/meals/[mealId]/thumbnail`, which authenticates the user and checks meal ownership before streaming the bytes — a public blob URL would expose other people's photos.
+
+Without a token (local dev, or before the store exists) the app falls back to inline data URLs so thumbnails still work, but that keeps image bytes inside Postgres; set the token in production.
+
+## Free-tier notes
+
+- Vercel Hobby is free for non-commercial projects.
+- Neon's free tier is 0.5 GB; Vercel Blob keeps image bytes out of it.
+- Clerk production instances require a domain you own with DNS records; a `*.vercel.app` host can only use a development instance.
+- OpenRouter `:free` models are limited to 20 requests/minute and 50/day without purchased credit (1,000/day after the first $10). The current default model costs a fraction of a cent per analysis.

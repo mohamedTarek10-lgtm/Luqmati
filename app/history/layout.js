@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "سجل الوجبات | لقمتي Luqmati",
+  title: "سجل الوجبات",
   description:
     "تصفح سجل الوجبات السابقة وتحليلات السعرات والبروتين والماكروز في تطبيق لقمتي",
   robots: {

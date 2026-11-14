@@ -1,3 +1,5 @@
+import { SITE_URL } from "@/lib/site-url";
+
 export default function robots() {
   return {
     rules: {
@@ -5,6 +7,7 @@ export default function robots() {
       allow: "/",
       disallow: ["/admin", "/api/"],
     },
-    sitemap: "https://luqmati.app/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

@@ -165,7 +165,10 @@ export default function ProfilePage() {
             gap: "16px",
           }}
         >
-          <ProfileAvatarBadge size={56} />
+          <ProfileAvatarBadge
+            size={56}
+            src={user?.imageUrl || user?.profileImageUrl || user?.profile_image_url}
+          />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <p
