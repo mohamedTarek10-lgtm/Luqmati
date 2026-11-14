@@ -36,11 +36,13 @@ export default function InstallPrompt() {
       );
   }, []);
 
-  // Detect iOS Safari
-  const isIOS =
-    typeof window !== "undefined" &&
-    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !window.MSStream;
+  // Detect iOS Safari through the external store so the server snapshot and
+  // the first client render match (no hydration mismatch, no effect setState).
+  const isIOS = useSyncExternalStore(
+    () => () => {},
+    () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream,
+    () => false,
+  );
 
   async function handleInstallClick() {
     if (deferredPrompt) {

@@ -12,11 +12,16 @@ import PortionScaler from "../portion-scaler";
 import { MedicalDisclaimer } from "../medical-disclaimer";
 
 // Heavy or interaction-only UI is kept out of the first-load bundle.
-const EditableIngredients = dynamic(() => import("../editable-ingredients"), { ssr: false });
-const MealShareModal = dynamic(() => import("../meal-share-modal"), { ssr: false });
-const AnalyzingLoader = dynamic(() => import("../analyzing-loader"), { ssr: false });
+// NOTE: `ssr: false` is deliberately avoided here — inside the App Router it
+// forces the whole route to bail out of server rendering
+// (BAILOUT_TO_CLIENT_SIDE_RENDERING), which hid the page content from crawlers.
+// These components are all SSR-safe, so they are code-split but still rendered
+// on the server.
+const EditableIngredients = dynamic(() => import("../editable-ingredients"));
+const MealShareModal = dynamic(() => import("../meal-share-modal"));
+const AnalyzingLoader = dynamic(() => import("../analyzing-loader"));
 const DailyNutritionDashboard = dynamic(() => import("../daily-nutrition-dashboard"));
-const InstallPrompt = dynamic(() => import("../install-prompt"), { ssr: false });
+const InstallPrompt = dynamic(() => import("../install-prompt"));
 const ProteinRing = dynamic(() => import("../protein-ring"));
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
